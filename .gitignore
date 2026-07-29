@@ -10,3 +10,7 @@
 # Build output (cross-compiled binary + installer artifacts)
 /dist/
 /installer/Output/
+
+# Code-signing material — never commit
+*.pfx
+*.p12

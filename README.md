@@ -97,6 +97,16 @@ The installer asks the office admin for the InvoicesUp URL, the connector token,
 and the local folder, writes `C:\ProgramData\InvoicesUp\config.json`, installs
 the binary, and registers + starts the service. Uninstall stops and removes it.
 
+To ship signed binaries, see [`docs/code-signing.md`](docs/code-signing.md).
+
+## Documentation
+
+- [`docs/despliegue-oficina.md`](docs/despliegue-oficina.md) — short deployment
+  guide for the accounting office (Spanish).
+- [`docs/code-signing.md`](docs/code-signing.md) — signing the binary/installer
+  with a `.pfx`.
+- [`docs/plan.md`](docs/plan.md) — MVP design and the crash-safety model.
+
 ## Not yet included
 
 Code signing certificate (yours to procure — the build wires the signing step)
