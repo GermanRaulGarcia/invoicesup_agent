@@ -21,6 +21,13 @@ WizardStyle=modern
 [Files]
 Source: "..\dist\{#ExeName}"; DestDir: "{app}"; Flags: ignoreversion
 
+[UninstallDelete]
+; Remove the token-bearing config and logs on uninstall (the state file lives in
+; the user's chosen export folder and is intentionally left alone).
+Type: files; Name: "{commonappdata}\InvoicesUp\config.json"
+Type: files; Name: "{commonappdata}\InvoicesUp\agent.log"
+Type: files; Name: "{commonappdata}\InvoicesUp\agent.log.old"
+
 [Code]
 var
   ConfigPage: TInputQueryWizardPage;
@@ -51,6 +58,22 @@ begin
   end;
 end;
 
+{ Stop and remove a previously-installed service before overwriting the exe, so
+  an upgrade/reinstall is clean (no file-in-use error, no stale registration). }
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+  Exe: String;
+begin
+  Result := '';
+  Exe := ExpandConstant('{app}\{#ExeName}');
+  if FileExists(Exe) then
+  begin
+    Exec(Exe, 'stop', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Exec(Exe, 'uninstall', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  end;
+end;
+
 function JsonEscape(const S: String): String;
 begin
   Result := S;
@@ -74,6 +97,19 @@ begin
   SaveStringToFile(Dir + '\config.json', Json, False);
 end;
 
+{ Restrict the token-bearing config so only SYSTEM and Administrators can read it
+  (ProgramData's default ACL grants all local users read). }
+procedure LockdownConfig;
+var
+  ResultCode: Integer;
+  Path: String;
+begin
+  Path := ExpandConstant('{commonappdata}\InvoicesUp\config.json');
+  Exec(ExpandConstant('{sys}\icacls.exe'),
+    '"' + Path + '" /inheritance:r /grant:r "*S-1-5-18:F" "*S-1-5-32-544:F"',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
@@ -81,9 +117,12 @@ begin
   if CurStep = ssPostInstall then
   begin
     WriteConfig;
+    LockdownConfig;
     { The exe defaults to ProgramData\InvoicesUp\config.json, so `install`
       registers the service against exactly the file we just wrote. }
-    Exec(ExpandConstant('{app}\{#ExeName}'), 'install', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    if (not Exec(ExpandConstant('{app}\{#ExeName}'), 'install', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)) or (ResultCode <> 0) then
+      MsgBox('No se pudo registrar/arrancar el servicio (código ' + IntToStr(ResultCode) + ').' + #13#10 +
+             'Revise C:\ProgramData\InvoicesUp\agent.log para el detalle.', mbError, MB_OK);
   end;
 end;
 
