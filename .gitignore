@@ -6,3 +6,7 @@
 /invoicesup-agent
 /invoicesup-agent.exe
 *.exe
+
+# Build output (cross-compiled binary + installer artifacts)
+/dist/
+/installer/Output/

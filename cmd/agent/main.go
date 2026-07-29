@@ -6,11 +6,11 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os"
-	"os/signal"
 	"path/filepath"
-	"syscall"
+	"strings"
 	"time"
 
 	"github.com/GermanRaulGarcia/invoicesup_agent/internal/api"
@@ -22,30 +22,63 @@ import (
 const stateFileName = ".invoicesup-agent-state.json"
 
 func main() {
-	configPath := flag.String("config", "config.json", "path to the config file")
-	flag.Parse()
+	// An optional leading subcommand, then flags: `agent [cmd] [-config path]`.
+	cmd := ""
+	args := os.Args[1:]
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		cmd, args = args[0], args[1:]
+	}
+	fs := flag.NewFlagSet("invoicesup-agent", flag.ExitOnError)
+	configPath := fs.String("config", defaultConfigPath(), "path to the config file")
+	_ = fs.Parse(args)
 
-	cfg, err := config.Load(*configPath)
+	switch cmd {
+	case "", "run":
+		runAgent(*configPath)
+	case "install", "uninstall", "start", "stop":
+		if err := controlService(cmd, *configPath); err != nil {
+			log.Fatalf("%s: %v", cmd, err)
+		}
+	default:
+		log.Fatalf("unknown command %q (use: install | uninstall | start | stop | run)", cmd)
+	}
+}
+
+// runtime holds the wired dependencies a serve loop needs.
+type runtime struct {
+	client    *api.Client
+	folder    string
+	statePath string
+	poll      time.Duration
+}
+
+// prepare loads config and wires the runtime — shared by the service and the
+// foreground runner.
+func prepare(configPath string) (*runtime, error) {
+	cfg, err := config.Load(configPath)
 	if err != nil {
-		log.Fatalf("config: %v", err)
+		return nil, err
 	}
 	if err := os.MkdirAll(cfg.Folder, 0o755); err != nil {
-		log.Fatalf("cannot create folder %s: %v", cfg.Folder, err)
+		return nil, fmt.Errorf("cannot create folder %s: %w", cfg.Folder, err)
 	}
+	return &runtime{
+		client:    api.New(cfg.BaseURL, cfg.Token),
+		folder:    cfg.Folder,
+		statePath: filepath.Join(cfg.Folder, stateFileName),
+		poll:      time.Duration(cfg.PollSeconds) * time.Second,
+	}, nil
+}
 
-	client := api.New(cfg.BaseURL, cfg.Token)
-	statePath := filepath.Join(cfg.Folder, stateFileName)
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	log.Printf("agent started: base=%s folder=%s poll=%ds", cfg.BaseURL, cfg.Folder, cfg.PollSeconds)
-
-	ticker := time.NewTicker(time.Duration(cfg.PollSeconds) * time.Second)
+// serve runs the poll loop until ctx is cancelled. Cross-platform: the Windows
+// service handler and the foreground runner both drive it.
+func serve(ctx context.Context, rt *runtime) {
+	log.Printf("agent started: folder=%s poll=%s", rt.folder, rt.poll)
+	ticker := time.NewTicker(rt.poll)
 	defer ticker.Stop()
 
 	for {
-		if err := runOnce(ctx, client, cfg.Folder, statePath); err != nil {
+		if err := runOnce(ctx, rt.client, rt.folder, rt.statePath); err != nil {
 			log.Printf("tick: %v", err)
 		}
 		select {

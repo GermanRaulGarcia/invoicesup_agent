@@ -59,20 +59,46 @@ exactly with Golden's delete, a batch may be re-served and re-imported — a
 **detectable duplicate** (Golden rejects repeated invoice numbers), never a
 silent omission. This is a deliberate trade-off.
 
-## Running as a Windows service (later)
+## Windows service
 
-For unattended operation, wrap the binary as a Windows service so it starts with
-the machine, e.g. with [NSSM](https://nssm.cc/):
+The binary is its own Windows service — no third-party wrapper. On Windows it
+defaults its config to `C:\ProgramData\InvoicesUp\config.json` and, when the
+Service Control Manager launches it, runs as a service (logging to
+`C:\ProgramData\InvoicesUp\agent.log`); run from a console it stays in the
+foreground.
+
+Service commands (run an elevated prompt):
 
 ```
-nssm install InvoicesUpAgent "C:\InvoicesUp\invoicesup-agent.exe" -config "C:\InvoicesUp\config.json"
-nssm start InvoicesUpAgent
+invoicesup-agent.exe install     # register + start the service (auto-start)
+invoicesup-agent.exe stop
+invoicesup-agent.exe start
+invoicesup-agent.exe uninstall
+invoicesup-agent.exe run         # run in the foreground (debugging)
 ```
 
-Run it under the account that has the Golden import folder mapped so Golden and
-the agent share the same `folder`.
+## Packaging (installer)
+
+1. Cross-compile the Windows binary (from macOS/Linux/Windows with Go):
+
+   ```bash
+   ./build.sh 0.1.0
+   # → dist/invoicesup-agent.exe
+   ```
+
+   To ship a **signed** binary, set `SIGN_PFX` (path to your code-signing
+   `.pfx`) and `SIGN_PASS` before running `build.sh` — signing needs your own
+   certificate and is skipped otherwise.
+
+2. On Windows, compile `installer/installer.iss` with
+   [Inno Setup 6+](https://jrsoftware.org/isinfo.php) → `invoicesup-agent-setup.exe`.
+
+The installer asks the office admin for the InvoicesUp URL, the connector token,
+and the local folder, writes `C:\ProgramData\InvoicesUp\config.json`, installs
+the binary, and registers + starts the service. Uninstall stops and removes it.
 
 ## Not yet included
 
-Code signing, an installer, and auto-update are out of scope for this MVP —
-they are packaging concerns to add once the flow is validated in the field.
+Code signing certificate (yours to procure — the build wires the signing step)
+and auto-update are out of scope for this MVP; add them once the flow is
+validated in the field.
