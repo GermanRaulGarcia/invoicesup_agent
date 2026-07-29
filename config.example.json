@@ -1,0 +1,6 @@
+{
+  "base_url": "https://invoicesup.kordino.com",
+  "token": "PASTE_CONNECTOR_TOKEN_HERE",
+  "folder": "C:\\InvoicesUp\\exports",
+  "poll_seconds": 30
+}

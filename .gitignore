@@ -1,0 +1,8 @@
+# Real config carries a secret token — never commit it.
+/config.json
+.invoicesup-agent-state.json
+
+# Built binaries
+/invoicesup-agent
+/invoicesup-agent.exe
+*.exe
