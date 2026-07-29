@@ -76,32 +76,44 @@ func runOnce(ctx context.Context, client *api.Client, folder, statePath string) 
 		return err == nil
 	}
 
-	// Re-adopt any file we wrote but crashed before persisting (file-first
-	// ordering), and persist the adoption so its eventual deletion is confirmed
-	// rather than re-served (which would double-import).
-	before := len(store)
-	store = reconcile.AdoptOrphans(pending, fileExists, store)
-	if len(store) != before {
+	// Reconcile "writing" markers with the disk: a file present means the write
+	// landed (→ written), absent means it never completed (→ dropped, rewritten).
+	if reconcile.Recover(fileExists, store) {
 		if err := state.Save(statePath, store); err != nil {
-			log.Printf("save (adopt): %v", err)
+			log.Printf("save (recover): %v", err)
 		}
 	}
 
 	for _, a := range reconcile.Reconcile(pending, fileExists, store) {
+		if ctx.Err() != nil {
+			return nil // shutting down; unfinished actions resume next run
+		}
 		switch a.Kind {
 		case reconcile.Write:
-			// File FIRST, then persist "written": a crash in between leaves an
-			// orphan file that AdoptOrphans re-adopts, never a "written" marker
-			// for a file that was never created.
-			if err := os.WriteFile(filepath.Join(folder, a.Filename), []byte(a.Content), 0o644); err != nil {
-				log.Printf("write %s: %v", a.Code, err)
+			name := a.Code + "_facturas.txt"
+			if name != filepath.Base(name) {
+				log.Printf("write %s: unsafe business code, skipped", a.Code)
+				continue
+			}
+			// Two-phase: persist intent+token BEFORE writing, so a file recovered
+			// after a crash is always bound to the token that produced it (never a
+			// later superset batch → no silent loss). If the intent can't be
+			// recorded, do not write the file at all.
+			store[a.Code] = state.Entry{Token: a.Token, State: state.Writing}
+			if err := state.Save(statePath, store); err != nil {
+				log.Printf("save (writing %s): %v", a.Code, err)
+				delete(store, a.Code)
+				continue
+			}
+			if err := writeFileAtomic(filepath.Join(folder, name), a.Content); err != nil {
+				log.Printf("write %s: %v", a.Code, err) // stays "writing"; Recover retries next tick
 				continue
 			}
 			store[a.Code] = state.Entry{Token: a.Token, State: state.Written}
 			if err := state.Save(statePath, store); err != nil {
-				log.Printf("save (write %s): %v", a.Code, err)
+				log.Printf("save (written %s): %v", a.Code, err)
 			}
-			log.Printf("wrote %s", a.Filename)
+			log.Printf("wrote %s", name)
 
 		case reconcile.Confirm:
 			// Persist "awaiting_confirm" BEFORE the network call so a crash mid
@@ -124,4 +136,15 @@ func runOnce(ctx context.Context, client *api.Client, folder, statePath string) 
 	}
 
 	return nil
+}
+
+// writeFileAtomic writes content to a temp file and renames it into place, so a
+// reader (Golden) never observes a half-written file and a crash never leaves a
+// truncated one.
+func writeFileAtomic(path, content string) error {
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, []byte(content), 0o644); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
 }

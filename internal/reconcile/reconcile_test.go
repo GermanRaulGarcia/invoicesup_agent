@@ -73,24 +73,36 @@ func TestMidCycleConfirmsOriginalToken(t *testing.T) {
 	}
 }
 
-// (f) orphan adoption: a file present with no entry is adopted as written using
-// its pending batch's token, and is then NOT rewritten.
-func TestAdoptOrphanThenNoWrite(t *testing.T) {
-	store := AdoptOrphans([]api.Batch{batch("SPM", "t1")}, exists("SPM"), state.Store{})
-	if store["SPM"].State != state.Written || store["SPM"].Token != "t1" {
-		t.Fatalf("orphan not adopted as written: %+v", store)
+// (f) recovery: a "writing" marker whose file landed is promoted to "written"
+// keeping ITS OWN token (never rebound to a later pending token), and is then
+// not rewritten.
+func TestRecoverPromotesWritingWithFile(t *testing.T) {
+	store := state.Store{"SPM": {Token: "t1", State: state.Writing}}
+	if !Recover(exists("SPM"), store) {
+		t.Fatal("expected store to change")
 	}
-	if actions := Reconcile([]api.Batch{batch("SPM", "t1")}, exists("SPM"), store); len(actions) != 0 {
-		t.Fatalf("adopted orphan should not be rewritten, got %+v", actions)
+	if store["SPM"].State != state.Written || store["SPM"].Token != "t1" {
+		t.Fatalf("expected promotion to written/t1, got %+v", store["SPM"])
+	}
+	// Even with a superset pending token t2, the recovered write is not touched.
+	if actions := Reconcile([]api.Batch{batch("SPM", "t2")}, exists("SPM"), store); len(actions) != 0 {
+		t.Fatalf("recovered write should not be rewritten, got %+v", actions)
 	}
 }
 
-// A lingering file with no matching pending batch is left alone (already
-// delivered server-side).
-func TestAdoptIgnoresFileWithoutPendingBatch(t *testing.T) {
-	store := AdoptOrphans(nil, exists("SPM"), state.Store{})
-	if len(store) != 0 {
-		t.Fatalf("expected no adoption without a pending batch, got %+v", store)
+// A "writing" marker whose file never landed is dropped, so the current pending
+// batch is written fresh.
+func TestRecoverDropsWritingWithoutFile(t *testing.T) {
+	store := state.Store{"SPM": {Token: "t1", State: state.Writing}}
+	if !Recover(exists(), store) {
+		t.Fatal("expected store to change")
+	}
+	if _, still := store["SPM"]; still {
+		t.Fatalf("expected writing entry dropped, got %+v", store)
+	}
+	// Now a pending batch writes fresh.
+	if actions := Reconcile([]api.Batch{batch("SPM", "t2")}, exists(), store); len(actions) != 1 || actions[0].Kind != Write || actions[0].Token != "t2" {
+		t.Fatalf("expected fresh write of t2, got %+v", actions)
 	}
 }
 

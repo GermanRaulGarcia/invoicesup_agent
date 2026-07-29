@@ -80,14 +80,15 @@ func (c *Client) Confirm(ctx context.Context, batchToken string) (int, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return 0, apiError(resp)
 	}
 
+	// Accept any 2xx; a body-less success (e.g. 204) counts as 0 newly delivered.
 	var body struct {
 		Delivered int `json:"delivered"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil && err != io.EOF {
 		return 0, err
 	}
 	return body.Delivered, nil

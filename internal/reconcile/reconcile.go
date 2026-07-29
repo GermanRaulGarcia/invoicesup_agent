@@ -15,34 +15,43 @@ const (
 	Confirm = "confirm"
 )
 
-// Action is a side effect for the loop to apply.
+// Action is a side effect for the loop to apply. The on-disk filename is
+// derived deterministically from Code by the loop ({code}_facturas.txt) — the
+// same rule the presence check uses — so writes and existence checks can never
+// disagree on the path.
 type Action struct {
-	Kind     string
-	Code     string
-	Filename string // write only
-	Content  string // write only
-	Token    string // write and confirm
+	Kind    string
+	Code    string
+	Content string // write only
+	Token   string // write and confirm
 }
 
-// AdoptOrphans reconciles the store with the disk before deciding actions: a
-// local file that exists with no store entry is a file we wrote but crashed
-// before persisting "written" (the file-first ordering). Re-adopt it as
-// written, using its pending batch's token, so it is not rewritten and its
-// eventual deletion by Golden is still confirmed. Returns the updated store.
+// Recover reconciles "writing" markers with the disk on startup (and harmlessly
+// every tick). A "writing" entry was persisted WITH its token before the atomic
+// file write, so recovery never has to guess which batch a file holds:
 //
-// Only pending batches can be adopted — if the file has no matching pending
-// batch, the server already considers it delivered, so there is nothing to
-// confirm and the lingering file is left alone.
-func AdoptOrphans(pending []api.Batch, fileExists func(code string) bool, store state.Store) state.Store {
-	for _, b := range pending {
-		if _, known := store[b.BusinessCode]; known {
+//   - file present → the write landed → promote to "written" (same token).
+//   - file absent  → the write never completed → drop it, so the current
+//     pending batch is written fresh next.
+//
+// This is why the token is persisted before the file: binding a recovered file
+// to the *current* pending token instead (an earlier approach) could confirm a
+// superset batch whose extra invoices were never in the file — a silent loss.
+// Returns whether the store changed (so the caller can persist it).
+func Recover(fileExists func(code string) bool, store state.Store) bool {
+	changed := false
+	for code, e := range store {
+		if e.State != state.Writing {
 			continue
 		}
-		if fileExists(b.BusinessCode) {
-			store[b.BusinessCode] = state.Entry{Token: b.BatchToken, State: state.Written}
+		if fileExists(code) {
+			store[code] = state.Entry{Token: e.Token, State: state.Written}
+		} else {
+			delete(store, code)
 		}
+		changed = true
 	}
-	return store
+	return changed
 }
 
 // Reconcile decides the actions for one tick. Pure.
@@ -76,11 +85,10 @@ func Reconcile(pending []api.Batch, fileExists func(code string) bool, store sta
 			continue
 		}
 		actions = append(actions, Action{
-			Kind:     Write,
-			Code:     b.BusinessCode,
-			Filename: b.Filename,
-			Content:  b.Content,
-			Token:    b.BatchToken,
+			Kind:    Write,
+			Code:    b.BusinessCode,
+			Content: b.Content,
+			Token:   b.BatchToken,
 		})
 	}
 

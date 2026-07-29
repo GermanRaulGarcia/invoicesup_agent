@@ -93,18 +93,23 @@ Rules, evaluated per business code:
 Persisting state and the file write cannot be atomic across a crash, so one
 ordering must be chosen:
 
-- **Chosen: file first, then persist `written`; adopt orphans on startup.**
-  The loop writes `{code}_facturas.txt`, then persists `State=written`. On
-  startup, a file present with **no** store entry is *adopted* as `written`
-  (matched to its pending batch's token). This guarantees we never hold
-  `written` for a file that was never created, so rule 1 can trust that
-  "written + file gone" means Golden imported.
+- **Chosen: two-phase write (persist token first), then recover on startup.**
+  The loop persists `{token, State=writing}` **before** the atomic file write,
+  then persists `State=written`. On startup `Recover` reconciles each `writing`
+  marker with the disk: file present → promote to `written` (keeping its token);
+  file absent → drop it and rewrite the current pending batch fresh. Because the
+  token is persisted *before* the file, a recovered file is always bound to the
+  token that produced it — we never confirm a later superset batch whose extra
+  invoices were never written (which would be a silent loss). If the `writing`
+  record can't be persisted, the file is not written at all.
 
 - **Residual window (documented, accepted):** file written → Golden imports and
-  deletes it → agent crashes *before* persisting `written`. On restart the file
-  is gone and there is no entry, so the batch re-serves and Golden re-imports —
-  a **duplicate**. This requires Golden to import within the ~millisecond gap
-  between the file write and the next line; practically it does not happen.
+  deletes it → agent crashes *before* persisting `written` (state still
+  `writing`, file gone). On restart `Recover` drops the marker and the batch
+  re-serves → Golden re-imports — a **detectable duplicate** (Golden rejects
+  repeated invoice numbers), never a silent omission. This requires Golden to
+  import within the ~millisecond gap between the file write and the next line;
+  practically it does not happen.
 
 - **Why this ordering:** the alternative (persist `written` first) turns the
   same window into a *silent missing invoice* instead of a duplicate. For

@@ -8,6 +8,12 @@ import (
 
 // Per-business lifecycle states.
 const (
+	// Writing is the intent recorded (with the batch token) BEFORE the local
+	// file is written, so a file recovered after a crash is always bound to the
+	// token that actually produced it. On restart: file present → the write
+	// landed (promote to Written); file absent → the write never completed
+	// (drop it, rewrite the current pending batch fresh).
+	Writing = "writing"
 	// Written means the local file was created and is waiting for Golden to
 	// import and delete it.
 	Written = "written"
