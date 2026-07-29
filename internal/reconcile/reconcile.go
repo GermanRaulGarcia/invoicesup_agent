@@ -55,6 +55,12 @@ func Recover(fileExists func(code string) bool, store state.Store) bool {
 }
 
 // Reconcile decides the actions for one tick. Pure.
+//
+// Precondition: Recover MUST have run on the same store first. Reconcile
+// intentionally has no case for a "writing" entry (it treats the code as
+// mid-cycle and emits nothing), so a "writing" marker that Recover has not yet
+// resolved would leave that business idle until it does. The only caller
+// (runOnce) always runs Recover immediately before Reconcile.
 func Reconcile(pending []api.Batch, fileExists func(code string) bool, store state.Store) []Action {
 	var actions []Action
 

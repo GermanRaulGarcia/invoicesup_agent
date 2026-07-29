@@ -72,7 +72,7 @@ func runOnce(ctx context.Context, client *api.Client, folder, statePath string) 
 	}
 
 	fileExists := func(code string) bool {
-		_, err := os.Stat(filepath.Join(folder, code+"_facturas.txt"))
+		_, err := os.Stat(filepath.Join(folder, filenameFor(code)))
 		return err == nil
 	}
 
@@ -90,7 +90,7 @@ func runOnce(ctx context.Context, client *api.Client, folder, statePath string) 
 		}
 		switch a.Kind {
 		case reconcile.Write:
-			name := a.Code + "_facturas.txt"
+			name := filenameFor(a.Code)
 			if name != filepath.Base(name) {
 				log.Printf("write %s: unsafe business code, skipped", a.Code)
 				continue
@@ -136,6 +136,13 @@ func runOnce(ctx context.Context, client *api.Client, folder, statePath string) 
 	}
 
 	return nil
+}
+
+// filenameFor is the single source of truth for a business's on-disk file name.
+// Both the write path and the presence check derive it from the code, so they
+// can never disagree on the path.
+func filenameFor(code string) string {
+	return code + "_facturas.txt"
 }
 
 // writeFileAtomic writes content to a temp file and renames it into place, so a

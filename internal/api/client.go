@@ -50,14 +50,14 @@ func (c *Client) Pending(ctx context.Context) ([]Batch, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, apiError(resp)
 	}
 
 	var body struct {
 		Data []Batch `json:"data"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil && err != io.EOF {
 		return nil, err
 	}
 	return body.Data, nil
