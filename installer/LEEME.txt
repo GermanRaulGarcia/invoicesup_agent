@@ -1,0 +1,34 @@
+Agente InvoicesUp — Instalación
+================================
+
+Antes de empezar necesitas tres datos que te facilita el administrador de
+InvoicesUp:
+
+  1. URL de InvoicesUp (por ejemplo https://invoicesup.kordino.com)
+  2. Token de conector (una clave larga)
+  3. Carpeta local donde Golden importará (por ejemplo C:\InvoicesUp\exports)
+
+INSTALAR
+--------
+  1. Haz clic con el botón derecho sobre "instalar.bat".
+  2. Elige "Ejecutar como administrador".
+  3. Responde a las tres preguntas. El agente queda instalado como servicio y
+     se inicia solo.
+
+Nota: como el programa aún no está firmado, Windows puede mostrar un aviso
+("Windows protegió tu PC"). Pulsa "Más información" y luego "Ejecutar de todos
+modos".
+
+COMPROBAR
+---------
+En el ordenador, abre "Servicios" (services.msc) y verás
+"InvoicesUp Connector Agent" en estado "En ejecución".
+
+DESINSTALAR
+-----------
+Ejecuta "desinstalar.bat" como administrador.
+
+Configuración y registro
+------------------------
+  C:\ProgramData\InvoicesUp\config.json   (configuración, incluye el token)
+  C:\ProgramData\InvoicesUp\agent.log     (registro de actividad)
