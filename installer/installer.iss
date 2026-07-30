@@ -37,7 +37,7 @@ begin
   ConfigPage := CreateInputQueryPage(wpSelectDir,
     'Configuración del agente',
     'Datos de conexión con InvoicesUp',
-    'Complete los datos que le pasó el administrador de InvoicesUp.');
+    'Complete los datos que le ha facilitado el administrador de InvoicesUp.');
   ConfigPage.Add('URL de InvoicesUp:', False);
   ConfigPage.Add('Token de conector:', True);   { masked }
   ConfigPage.Add('Carpeta local (donde Golden importa):', False);
@@ -121,8 +121,8 @@ begin
     { The exe defaults to ProgramData\InvoicesUp\config.json, so `install`
       registers the service against exactly the file we just wrote. }
     if (not Exec(ExpandConstant('{app}\{#ExeName}'), 'install', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)) or (ResultCode <> 0) then
-      MsgBox('No se pudo registrar/arrancar el servicio (código ' + IntToStr(ResultCode) + ').' + #13#10 +
-             'Revise C:\ProgramData\InvoicesUp\agent.log para el detalle.', mbError, MB_OK);
+      MsgBox('No se pudo registrar/iniciar el servicio (código ' + IntToStr(ResultCode) + ').' + #13#10 +
+             'Consulte C:\ProgramData\InvoicesUp\agent.log para más detalles.', mbError, MB_OK);
   end;
 end;
 

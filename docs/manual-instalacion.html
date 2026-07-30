@@ -155,7 +155,7 @@
         <p>Manual de instalación · Windows</p>
       </div>
     </div>
-    <div class="tabs" role="tablist" aria-label="Elegí tu rol">
+    <div class="tabs" role="tablist" aria-label="Elige tu rol">
       <button role="tab" id="tab-of" aria-controls="p-of" aria-selected="true">Para la oficina</button>
       <button role="tab" id="tab-co" aria-controls="p-co" aria-selected="false">Para el contable</button>
     </div>
@@ -163,102 +163,102 @@
 </header>
 
 <main class="wrap">
-  <p class="lede">El Agente InvoicesUp trae las facturas desde InvoicesUp y las deja como archivos en una carpeta de la PC, listos para que Golden los importe. Se instala una vez y trabaja solo en segundo plano.</p>
+  <p class="lede">El Agente InvoicesUp trae las facturas desde InvoicesUp y las deja como archivos en una carpeta del ordenador, listos para que Golden los importe. Se instala una vez y funciona solo en segundo plano.</p>
 
   <section id="p-of" role="tabpanel" aria-labelledby="tab-of">
     <p class="panel-intro">Instalación</p>
 
     <h2>Antes de empezar</h2>
     <div class="cards">
-      <div class="card"><b>Windows 10/11 con permisos de administrador</b><span>La instalación registra un servicio de Windows, así que necesita una cuenta de administrador.</span></div>
-      <div class="card"><b>Tres datos que da el administrador de InvoicesUp</b><span>URL, token de conector y la carpeta local donde aparecerán los archivos.</span></div>
+      <div class="card"><b>Windows 10/11 con permisos de administrador</b><span>La instalación registra un servicio de Windows, por lo que necesita una cuenta de administrador.</span></div>
+      <div class="card"><b>Tres datos que facilita el administrador de InvoicesUp</b><span>La URL, el token de conector y la carpeta local donde aparecerán los archivos.</span></div>
     </div>
 
     <div class="facts" style="margin-top:12px">
-      <div><dt>URL</dt><dd>La dirección de InvoicesUp, ej. <code>https://invoicesup.kordino.com</code></dd></div>
+      <div><dt>URL</dt><dd>La dirección de InvoicesUp, p.&nbsp;ej. <code>https://invoicesup.kordino.com</code></dd></div>
       <div><dt>Token</dt><dd>Una clave larga. Se genera en <b>InvoicesUp → Usuarios → editar el usuario de la oficina → Generar token</b>.</dd></div>
-      <div><dt>Carpeta</dt><dd>Una carpeta del disco (no una unidad de red), ej. <code>C:\InvoicesUp\exports</code></dd></div>
+      <div><dt>Carpeta</dt><dd>Una carpeta del disco (no una unidad de red), p.&nbsp;ej. <code>C:\InvoicesUp\exports</code></dd></div>
     </div>
 
     <h2>Pasos</h2>
     <ol class="steps">
       <li>
-        <h3>Ejecutar el instalador como administrador</h3>
-        <p>Clic derecho sobre <code>invoicesup-agent-setup.exe</code> → <b>Ejecutar como administrador</b>.</p>
+        <h3>Ejecuta el instalador como administrador</h3>
+        <p>Haz clic con el botón derecho sobre <code>invoicesup-agent-setup.exe</code> → <b>Ejecutar como administrador</b>.</p>
       </li>
       <li>
-        <h3>Completar los tres datos</h3>
-        <p>En la pantalla <b>Configuración del agente</b>, escribí la URL, el token y la carpeta local. El token se muestra oculto: pegalo tal cual te lo pasaron.</p>
+        <h3>Rellena los tres datos</h3>
+        <p>En la pantalla <b>Configuración del agente</b>, introduce la URL, el token y la carpeta local. El token se muestra oculto: pégalo tal cual te lo han facilitado.</p>
       </li>
       <li>
-        <h3>Finalizar</h3>
-        <p>Al terminar el asistente, el agente queda instalado como servicio y <b>arranca solo</b>. No hay que dejar ninguna ventana abierta.</p>
+        <h3>Finaliza</h3>
+        <p>Al terminar el asistente, el agente queda instalado como servicio y <b>se inicia solo</b>. No hay que dejar ninguna ventana abierta.</p>
       </li>
       <li>
-        <h3>Verificar el servicio</h3>
-        <p>Abrí <b>Servicios</b> y confirmá que el servicio está en ejecución:</p>
-        <div class="cmd">services.msc  →  “InvoicesUp Connector Agent” = En ejecución</div>
+        <h3>Comprueba el servicio</h3>
+        <p>Abre <b>Servicios</b> y confirma que el servicio está en ejecución:</p>
+        <div class="cmd">services.msc  →  «InvoicesUp Connector Agent» = En ejecución</div>
       </li>
     </ol>
 
     <div class="note ok">
-      <span class="tag">Todo bien si…</span>
-      <p>El servicio figura <strong>En ejecución</strong> y, cuando el administrador exporta facturas, en ~30&nbsp;segundos aparecen archivos <code>CODIGO_facturas.txt</code> en la carpeta (uno por empresa). Sin facturas nuevas no se escribe nada: es lo normal.</p>
+      <span class="tag">Todo correcto si…</span>
+      <p>El servicio figura <strong>En ejecución</strong> y, cuando el administrador exporta facturas, en unos ~30&nbsp;segundos aparecen archivos <code>CODIGO_facturas.txt</code> en la carpeta (uno por empresa). Si no hay facturas nuevas no se escribe nada: es lo normal.</p>
     </div>
 
     <div class="note warn">
-      <span class="tag">Si no arranca</span>
-      <p>Revisá el registro del agente y corregí el dato mal cargado reinstalando:</p>
+      <span class="tag">Si no se inicia</span>
+      <p>Consulta el registro del agente y corrige el dato mal introducido reinstalando:</p>
       <div class="cmd">C:\ProgramData\InvoicesUp\agent.log</div>
       <ul>
         <li>Suele ser la URL, el token o la carpeta mal escritos.</li>
-        <li>Si el token venció o se revocó, pedí uno nuevo al administrador.</li>
+        <li>Si el token ha caducado o se ha revocado, solicita uno nuevo al administrador.</li>
       </ul>
     </div>
 
     <h2>Actualizar y desinstalar</h2>
     <div class="cards">
-      <div class="card"><b>Actualizar</b><span>Ejecutá el nuevo instalador: detiene la versión anterior, la reemplaza y vuelve a arrancar el servicio, conservando la configuración.</span></div>
+      <div class="card"><b>Actualizar</b><span>Ejecuta el nuevo instalador: detiene la versión anterior, la reemplaza y vuelve a iniciar el servicio, conservando la configuración.</span></div>
       <div class="card"><b>Desinstalar</b><span>Panel de control → Programas → InvoicesUp Connector Agent → Desinstalar. Quita el servicio y borra la configuración, incluido el token.</span></div>
     </div>
   </section>
 
   <section id="p-co" role="tabpanel" aria-labelledby="tab-co" hidden>
     <p class="panel-intro">Uso con Golden</p>
-    <p class="lede" style="margin-bottom:22px">Una vez instalado el agente, tu trabajo es simple: Golden importa desde una carpeta local y borra el archivo al terminar. El agente hace el resto.</p>
+    <p class="lede" style="margin-bottom:22px">Una vez instalado el agente, tu trabajo es sencillo: Golden importa desde una carpeta local y borra el archivo al terminar. El agente hace el resto.</p>
 
     <h2>Configurar la importación en Golden</h2>
     <ol class="steps">
       <li>
-        <h3>Apuntar Golden a la carpeta local</h3>
+        <h3>Apunta Golden a la carpeta local</h3>
         <p>La ruta de importación es la carpeta que se configuró en la instalación, con <b>un archivo por empresa</b> según su código:</p>
         <div class="cmd">C:\InvoicesUp\exports\SPM_facturas.txt</div>
         <p>Cada empresa tiene su archivo (<code>CODIGO_facturas.txt</code>).</p>
       </li>
       <li>
-        <h3>Activar “eliminar tras importar”</h3>
-        <p>En Golden, habilitá la opción de borrar el archivo después de importarlo. Es lo que le avisa al agente que ya lo procesaste.</p>
+        <h3>Activa «eliminar tras importar»</h3>
+        <p>En Golden, habilita la opción de borrar el archivo después de importarlo. Es lo que avisa al agente de que ya lo has procesado.</p>
       </li>
     </ol>
 
     <div class="note ok">
       <span class="tag">El ciclo automático</span>
-      <p>Golden importa el archivo y lo borra → el agente detecta el borrado y le avisa a InvoicesUp → trae las próximas facturas nuevas a un archivo limpio. Se repite solo, sin que tengas que tocar nada.</p>
+      <p>Golden importa el archivo y lo borra → el agente detecta el borrado y avisa a InvoicesUp → trae las siguientes facturas nuevas a un archivo limpio. Se repite solo, sin que tengas que hacer nada.</p>
     </div>
 
     <h2>Si no aparecen facturas</h2>
     <div class="note warn">
-      <span class="tag">Revisá esto</span>
+      <span class="tag">Comprueba esto</span>
       <ul>
-        <li>Que haya facturas <b>exportadas</b> en InvoicesUp (alguien apretó “Exportar TXT”). Sin exportar, no baja nada.</li>
-        <li>Que tu oficina tenga <b>empresas asignadas</b>. Preguntale al administrador.</li>
+        <li>Que haya facturas <b>exportadas</b> en InvoicesUp (alguien ha hecho clic en «Exportar TXT»). Si no se exportan, no se descarga nada.</li>
+        <li>Que tu oficina tenga <b>empresas asignadas</b>. Consúltalo con el administrador.</li>
         <li>Que la <b>ruta de importación</b> en Golden coincida exactamente con la carpeta del agente.</li>
       </ul>
     </div>
 
     <div class="note">
       <span class="tag" style="background:var(--surface-2);color:var(--muted)">Importante</span>
-      <p>No muevas ni renombres los archivos <code>_facturas.txt</code> a mano. Dejá que Golden los importe y los borre — así el agente lleva la cuenta correcta de lo entregado.</p>
+      <p>No muevas ni cambies el nombre de los archivos <code>_facturas.txt</code> manualmente. Deja que Golden los importe y los borre; así el agente lleva la cuenta correcta de lo entregado.</p>
     </div>
   </section>
 
